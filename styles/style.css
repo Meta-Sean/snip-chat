@@ -1,0 +1,18 @@
+:root {
+    color-scheme: light dark;
+  }
+  
+  @media (prefers-color-scheme: dark) {
+    body { background: #333; color: white; }
+  }
+  
+  @media (prefers-color-scheme: light) {
+    body { background: #ddd; color: black; }
+  }
+
+  #response-container {
+    margin-top: 20px;
+    border: 1px solid #ddd;
+    padding: 10px;
+    min-height: 50px;
+}

@@ -1,0 +1,23 @@
+{
+  "name": "snipchat-electron",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^27.0.4"
+  },
+  "dependencies": {
+    "axios": "^1.6.1",
+    "dotenv": "^16.3.1",
+    "form-data": "^4.0.0",
+    "openai": "^4.17.4",
+    "stream": "^0.0.2"
+  }
+}

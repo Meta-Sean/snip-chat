@@ -1,0 +1,26 @@
+# TODO:
+- Wake word voice activation
+- Drop down for TTS voice choices
+- Clean UI (Text at bottom, better icons and stylizing)
+- Hide API key✔️:check / Allow user to input their API key
+- Seperate functions for Image Chat and just text calls
+- chunk audio over 30 seconds for whisper
+- Whole chat context for conversation 
+- UI similar to my vercel app / chatgpt
+- a settings widget in bottom corner to change voice / and display settings
+- Error Feedback to Users:
+- input validation
+- preformance optimization
+- payments
+- authentication 
+- Streaming TTS and Streaming Text
+- Window Selection for live and ability to exit the screen share.
+
+- Rename variables / button and delete unused code. 
+
+Ignore this Image
+
+Main task for 11/14:
+    Get message history working so old messages from api are included in context
+    Option to clear the message history to start fresh chat
+    Streaming text completion? 

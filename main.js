@@ -59,7 +59,7 @@ ipcMain.on('send-prompt', async (event, { prompt, base64Image }) => {
     //let fullTextResponse = ''; // To accumulate the full text response
 
     // Call the OpenAI service with a callback for streamed text
-    await openaiService.callOpenAI(prompt, base64Image, event);
+    await openaiService.callOpenAI(prompt, base64Image, mainWindow);
 
     // Once the full text response is received, handle text-to-speech
     // if (fullTextResponse) {
@@ -105,24 +105,14 @@ ipcMain.on('snip-complete', async (event, base64Image) => {
   }
 
   try {
-    const response = await openaiService.callOpenAI(currentPromptText, base64Image);
-    
-    // Check if response and choices are valid
-    if ( response ) {
-      const text = response
-      const audioFilePath = await openaiService.textToSpeech(response);
-
-      mainWindow.webContents.send('response-received', { text, audioFilePath });
-    } else {
-      // Handle invalid response
-      console.error('Invalid response from OpenAI API:', response);
-      mainWindow.webContents.send('api-call-error', 'Invalid response from OpenAI API');
-    }
+    await openaiService.callOpenAI(currentPromptText, base64Image, mainWindow);
+    // The streaming of the response and its conversion to audio is handled within callOpenAI
   } catch (error) {
     console.error('Error calling OpenAI with snip:', error);
     mainWindow.webContents.send('api-call-error', error.message);
   }
 });
+
 
 
 

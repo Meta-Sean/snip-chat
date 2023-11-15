@@ -110,3 +110,63 @@ const openaiService = {
 };
 
 module.exports = openaiService;
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>SnipChat</title>
+  <link rel="stylesheet" type="text/css" href="styles/style.css">
+</head>
+<body>
+  <div>
+    <input type="text" id="prompt-input" placeholder="Enter your prompt here...">
+    <button id="start-recording">Start Recording</button>
+    <button id="stop-recording" disabled>Stop Recording</button>
+    <button id="send-prompt">Send Prompt</button>
+    <button id="stop-audio">Stop Audio</button>
+    <button id="replay-audio">Replay Audio</button>
+    <p>Current theme source: <strong id="theme-source">System</strong></p>
+
+    <button id="toggle-dark-mode">Toggle Dark Mode</button>
+    <button id="reset-to-system">Reset to System Theme</button>
+    <p>Screenshot Tool:</p>
+    <button id="snip">Live</button>
+    <button id="start-snipping">Snip</button>
+    <button id="clear-chat">Clear Chat</button>
+    <video id="screenVideo" autoplay></video>
+
+  </div>
+  <div id="response-container"></div>
+  
+
+  <!-- Link to the renderer.js script -->
+  <script src="renderer.js"></script>
+</body>
+</html>
+
+
+textToSpeech: async function (text) {
+        try {
+            const response = await openai.audio.speech.create({
+                model: "tts-1",
+                voice: "alloy",
+                input: text
+            });
+
+            if (response && response.body) {
+                const audioFileName = `audioResponse_${Date.now()}.mp3`;
+                const audioFilePath = path.join(__dirname, audioFileName);
+
+                // Use pipeline to handle the stream and write it to a file
+                await pipelineAsync(response.body, fs.createWriteStream(audioFilePath));
+
+                return audioFilePath;
+            } else {
+                throw new Error('No audio data received');
+            }
+        } catch (error) {
+            console.error('Error in text-to-speech:', error);
+            throw error;
+        }
+    },

@@ -5,15 +5,12 @@ document.getElementById('toggle-dark-mode').addEventListener('click', async () =
     document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light'
   })
   
-document.getElementById('reset-to-system').addEventListener('click', async () => {
-    await window.darkMode.system()
-    document.getElementById('theme-source').innerHTML = 'System'
-  })
 
 document.getElementById('send-prompt').addEventListener('click', () => {
     let prompt = document.getElementById('prompt-input').value;
     console.log("Sending Base64 Image URL:", globalBase64Image);
     window.electronAPI.send('send-prompt', { prompt, base64Image: globalBase64Image });
+    playAudio();
 });
 
 // In renderer.js
@@ -22,6 +19,24 @@ promptInput.addEventListener('input', () => {
     window.electronAPI.send('update-prompt-text', promptInput.value);
 });
 
+promptInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+        // Prevent the default action to avoid submitting a form, if any
+        event.preventDefault();
+
+        // Get the prompt text from the input
+        const prompt = promptInput.value;
+        
+        // Check if the prompt is not empty
+        if (prompt.trim() !== '') {
+            console.log("Sending Prompt:", prompt);
+            window.electronAPI.send('send-prompt', { prompt, base64Image: globalBase64Image });
+
+            // Optionally, clear the input after sending
+            promptInput.value = '';
+        }
+    }
+});
 
 let currentAudio = null;
 let currentAudioFilePath = '';
@@ -74,6 +89,34 @@ document.getElementById('replay-audio').addEventListener('click', () => {
     }
 });
 
+let mediaSource = new MediaSource();
+let sourceBuffer;
+let audioElement = document.createElement('audio');
+audioElement.src = URL.createObjectURL(mediaSource);
+
+mediaSource.addEventListener('sourceopen', function() {
+    sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg'); // MIME type depends on your audio format
+});
+
+window.electronAPI.receive('audio-chunk-received', (chunk) => {
+    console.log('Received chunk size:', chunk.byteLength);
+    if (sourceBuffer && !sourceBuffer.updating) {
+        sourceBuffer.appendBuffer(chunk);
+    }
+});
+
+
+// Function to start playing the audio
+function playAudio() {
+    audioElement.play();
+}
+
+// Function to stop playing the audio
+function stopAudio() {
+    audioElement.pause();
+    mediaSource.endOfStream(); // Call this when the stream has finished
+}
+
 let mediaRecorder;
 let audioChunks = [];
 
@@ -106,7 +149,7 @@ window.electronAPI.receive('transcription-complete', (transcribedText) => {
 document.getElementById('snip').addEventListener('click', () => {
     window.electronAPI.requestSourceId();
 });
-console.log("Requesting source ID");
+
 window.electronAPI.onReceivedSourceId(async (sourceId) => {
     console.log("Received source ID:", sourceId);
     try {

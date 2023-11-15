@@ -21,6 +21,25 @@
 Ignore this Image
 
 Main task for 11/14:
-    Get message history working so old messages from api are included in context
-    Option to clear the message history to start fresh chat
-    Streaming text completion? 
+    Get message history working so old messages from api are included in context✔️
+    Option to clear the message history to start fresh chat✔️
+    Streaming text completion? ✔️
+
+Main tasks for 11/15:
+    Easier:
+        Get the response UI formatted properly, input at bottom like chat apps
+    Challenge:
+        Get the streaming TTS api working, this will be quite involved as it will require passing chunks
+        of the audio to the app similar to the text
+    bonus:
+        get a window detection drop down working
+        user selects window to stream 
+        ability to stop stream
+
+
+Idea:
+Set a live window > calls be seconds > and just return an image call on the interval:
+basically lets you 'listen' to your frame/window instead of watching it
+
+
+BUGS: Seems like the Live function fights with the snip tool, might have to handle if snip ignore live or something

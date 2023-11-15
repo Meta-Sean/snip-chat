@@ -3,6 +3,7 @@ const fs = require('fs');
 const path = require('path');
 const { pipeline } = require('stream');
 const { promisify } = require('util');
+const { PassThrough } = require('stream');
 
 const pipelineAsync = promisify(pipeline);
 
@@ -14,81 +15,100 @@ const openai = new OpenAI({
 let messageHistory = []; // Global message history
 
 const openaiService = {
-    callOpenAI: async function (prompt, base64Image, event) {
+    callOpenAI: async function (prompt, base64Image, targetWindow) {
         try {
-            let contentItems = [{"type": "text", "text": prompt}];
-            if (base64Image) {
-                contentItems.push({"type": "image_url", "image_url": { url: base64Image }});
-            }
-    
-            let messages = messageHistory.concat([{ "role": "user", "content": contentItems }]);
-            let fullTextResponse = ''; // Accumulate the full text response
-    
-            const stream = await openai.chat.completions.create({
-                model: "gpt-4-vision-preview",
-                messages: messages,
-                max_tokens: 300,
-                stream: true
-            });
-    
-            for await (const chunk of stream) {
-                if (chunk.choices && chunk.choices.length > 0 && chunk.choices[0].delta) {
-                    const deltaContent = chunk.choices[0].delta.content;
-                    if (deltaContent) {
-                        // Send to renderer only if event is available
-                        if (event) {
-                            event.sender.send('streamed-response', deltaContent);
-                        }
-                        fullTextResponse += deltaContent;
-                        messageHistory.push({ "role": "system", "content": deltaContent });
-                    }
-                }
-            }
-            console.log('Stream ended');
-            
+            const contentItems = this.createContentItems(prompt, base64Image);
+            const messages = this.updateMessageHistory(contentItems);
+            const fullTextResponse = await this.handleStreamingResponse(messages, targetWindow);
+
             // Once the full text response is complete, handle text-to-speech
-            if (fullTextResponse) {
-                const audioFilePath = await this.textToSpeech(fullTextResponse);
-                event.sender.send('response-received', { text: fullTextResponse, audioFilePath });
+            if (fullTextResponse && targetWindow && !targetWindow.isDestroyed()) {
+                const audioFilePath = await this.textToSpeech(fullTextResponse, targetWindow);
+                targetWindow.webContents.send('response-received', { text: fullTextResponse, audioFilePath });
             }
-    
         } catch (error) {
             console.error('Error calling OpenAI API with streaming:', error);
             throw error;
         }
     },
-    
-    
 
+    createContentItems: function(prompt, base64Image) {
+        let contentItems = [{"type": "text", "text": prompt}];
+        if (base64Image) {
+            contentItems.push({"type": "image_url", "image_url": { url: base64Image }});
+        }
+        return contentItems;
+    },
+
+    updateMessageHistory: function(contentItems) {
+        messageHistory.push({ "role": "user", "content": contentItems });
+        return messageHistory;
+    },
+
+    handleStreamingResponse: async function(messages, targetWindow) {
+        let fullTextResponse = '';
+        const stream = await openai.chat.completions.create({
+            model: "gpt-4-vision-preview",
+            messages: messages,
+            max_tokens: 300,
+            stream: true
+        });
+
+        for await (const chunk of stream) {
+            if (chunk.choices && chunk.choices.length > 0 && chunk.choices[0].delta) {
+                const deltaContent = chunk.choices[0].delta.content;
+                if (deltaContent) {
+                    if (targetWindow && !targetWindow.isDestroyed()) {
+                        targetWindow.webContents.send('streamed-response', deltaContent);
+                    }
+                    fullTextResponse += deltaContent;
+                    messageHistory.push({ "role": "system", "content": deltaContent });
+                }
+            }
+        }
+        console.log('Stream ended');
+        return fullTextResponse;
+    },
+    
+    
+  
     clearMessageHistory: function() {
         messageHistory = []; // Reset the history
     },
     
 
-    textToSpeech: async function (text) {
+    textToSpeech: async function (text, targetWindow) {
         try {
             const response = await openai.audio.speech.create({
                 model: "tts-1",
                 voice: "alloy",
-                input: text
+                input: text,
+                stream: true
             });
-
+    
             if (response && response.body) {
-                const audioFileName = `audioResponse_${Date.now()}.mp3`;
-                const audioFilePath = path.join(__dirname, audioFileName);
-
-                // Use pipeline to handle the stream and write it to a file
-                await pipelineAsync(response.body, fs.createWriteStream(audioFilePath));
-
-                return audioFilePath;
+                const passThrough = new PassThrough();
+                response.body.pipe(passThrough);
+    
+                passThrough.on('data', (chunk) => {
+                    //console.log("Received audio chunk");
+                    if (targetWindow && !targetWindow.isDestroyed()) {
+                        targetWindow.webContents.send('audio-chunk-received', chunk);
+                    }
+                });
+    
+                passThrough.on('end', () => {
+                    console.log('Audio stream ended');
+                });
             } else {
-                throw new Error('No audio data received');
+                throw new Error('No streamable audio data received');
             }
         } catch (error) {
-            console.error('Error in text-to-speech:', error);
+            console.error('Error in text-to-speech streaming:', error);
             throw error;
         }
     },
+    
 
 
     transcribeAudio: async function (audioBuffer) {

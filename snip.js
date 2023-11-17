@@ -38,7 +38,7 @@ canvas.onmouseup = async (e) => {
     const rectHeight = e.clientY - startY;
 
     // Request the source ID from the main process
-    window.electronAPI.requestSourceId();
+    window.electronAPI.requestSourceId('desktop', 'snip');
 
     window.electronAPI.onReceivedSourceId(async (sourceId) => {
         try {

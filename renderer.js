@@ -8,7 +8,8 @@ document.getElementById('toggle-dark-mode').addEventListener('click', async () =
 
 document.getElementById('send-prompt').addEventListener('click', () => {
     let prompt = document.getElementById('prompt-input').value;
-    console.log("Sending Base64 Image URL:", globalBase64Image);
+    promptInput.value = '';
+    //console.log("Sending Base64 Image URL:", globalBase64Image);
     window.electronAPI.send('send-prompt', { prompt, base64Image: globalBase64Image });
     playAudio();
 });
@@ -41,15 +42,15 @@ promptInput.addEventListener('keydown', (event) => {
 let currentAudio = null;
 let currentAudioFilePath = '';
 
-window.electronAPI.receive('response-received', ({ text, audioFilePath }) => {
-    currentAudioFilePath = audioFilePath;
+// // window.electronAPI.receive('response-received', ({ text, audioFilePath }) => {
+// //     currentAudioFilePath = audioFilePath;
 
-    if (currentAudio) {
-        currentAudio.pause();
-    }
-    currentAudio = new Audio(currentAudioFilePath);
-    currentAudio.play().catch(e => console.error('Error playing audio:', e));
-});
+// //     if (currentAudio) {
+// //         currentAudio.pause();
+// //     }
+// //     currentAudio = new Audio(currentAudioFilePath);
+// //     currentAudio.play().catch(e => console.error('Error playing audio:', e));
+// // });
 
 window.electronAPI.receive('streamed-response', (partialResponse) => {
     const chatElement = document.getElementById('response-container');
@@ -59,20 +60,24 @@ window.electronAPI.receive('streamed-response', (partialResponse) => {
 
 document.getElementById('clear-chat').addEventListener('click', () => {
     window.electronAPI.clearChatHistory();
+    stopAudio(); 
 });
 
 window.electronAPI.onHistoryCleared(() => {
     document.getElementById('response-container').innerHTML = '';
     // Stop and reset the current audio
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0; // Reset the audio playback to the start
-        currentAudioFilePath = null; // Clear the reference
-    }
+    stopAudio();
+    // if (currentAudio) {
+    //     currentAudio.pause();
+    //     currentAudio.currentTime = 0; // Reset the audio playback to the start
+    //     currentAudioFilePath = null; // Clear the reference
+    // }
     alert('Chat history cleared!');
 });
 
+
 document.getElementById('stop-audio').addEventListener('click', () => {
+    stopAudio();
     if (currentAudio) {
         currentAudio.pause();
         currentAudio.currentTime = 0; // Reset audio to start
@@ -89,33 +94,79 @@ document.getElementById('replay-audio').addEventListener('click', () => {
     }
 });
 
-let mediaSource = new MediaSource();
+let mediaSource;
 let sourceBuffer;
 let audioElement = document.createElement('audio');
-audioElement.src = URL.createObjectURL(mediaSource);
+initializeMediaSource();
 
-mediaSource.addEventListener('sourceopen', function() {
-    sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg'); // MIME type depends on your audio format
-});
+function initializeMediaSource() {
+    mediaSource = new MediaSource();
+    audioElement.src = URL.createObjectURL(mediaSource);
+    mediaSource.addEventListener('sourceopen', sourceOpenHandler);
+}
+
+function sourceOpenHandler() {
+    sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
+    sourceBuffer.addEventListener('updateend', updateEndHandler);
+}
+
+function updateEndHandler() {
+    // This can be used for actions after updates are complete
+}
 
 window.electronAPI.receive('audio-chunk-received', (chunk) => {
-    console.log('Received chunk size:', chunk.byteLength);
     if (sourceBuffer && !sourceBuffer.updating) {
         sourceBuffer.appendBuffer(chunk);
     }
 });
 
-
-// Function to start playing the audio
 function playAudio() {
-    audioElement.play();
+    if (audioElement.paused) {
+        audioElement.play();
+    }
 }
 
-// Function to stop playing the audio
 function stopAudio() {
     audioElement.pause();
-    mediaSource.endOfStream(); // Call this when the stream has finished
+    audioElement.currentTime = 0;
+    audioElement.src = '';
+    if (mediaSource.readyState === 'open') {
+        clearSourceBuffer();
+    } else {
+        initializeMediaSource(); // Reinitialize if the MediaSource is not open
+    }
 }
+
+function clearSourceBuffer() {
+    if (sourceBuffer.updating) {
+        sourceBuffer.addEventListener('updateend', clearBuffer, { once: true });
+    } else {
+        clearBuffer();
+    }
+}
+
+function clearBuffer() {
+    try {
+        sourceBuffer.remove(0, audioElement.duration);
+    } catch (error) {
+        console.error('Error clearing source buffer:', error);
+    }
+}
+
+document.getElementById('skip-button').addEventListener('click', () => {
+    stopAudio();
+    window.electronAPI.send('skip-audio-stream');
+    initializeMediaSource(); // Reinitialize for the new stream
+});
+
+
+let isMuted = false;
+document.getElementById('mute-button').addEventListener('click', () => {
+    isMuted = !isMuted;
+    audioElement.muted = isMuted;
+    document.getElementById('mute-button').textContent = isMuted ? 'Unmute' : 'Mute';
+});
+
 
 let mediaRecorder;
 let audioChunks = [];
@@ -146,12 +197,33 @@ window.electronAPI.receive('transcription-complete', (transcribedText) => {
 });
 
 
-document.getElementById('snip').addEventListener('click', () => {
-    window.electronAPI.requestSourceId();
+let isCaptureActive = false;
+let captureMode = '';
+let captureInterval;
+
+document.getElementById('window-select').addEventListener('change', () => {
+    if (isCaptureActive) {
+        const selectedWindowId = document.getElementById('window-select').value;
+        clearInterval(captureInterval); // Stop the current capture interval
+        captureSelectedWindow(selectedWindowId); // Capture the newly selected window immediately
+        captureInterval = setInterval(() => captureSelectedWindow(selectedWindowId), 1000); // Restart the capture interval
+    }
 });
 
-window.electronAPI.onReceivedSourceId(async (sourceId) => {
-    console.log("Received source ID:", sourceId);
+document.getElementById('capture').addEventListener('click', () => {
+    isCaptureActive = !isCaptureActive;
+    console.log('Capture state:', isCaptureActive)
+    const selectedWindowId = document.getElementById('window-select').value;
+    if (isCaptureActive) {
+        window.electronAPI.requestSourceId(selectedWindowId, 'capture');
+        captureInterval = setInterval(() => captureSelectedWindow(selectedWindowId), 1000);
+    } else {
+        globalBase64Image = '';
+        clearInterval(captureInterval);
+    }
+});
+
+async function captureSelectedWindow(sourceId) {
     try {
         const constraints = {
             audio: false,
@@ -168,10 +240,6 @@ window.electronAPI.onReceivedSourceId(async (sourceId) => {
         };
 
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        console.log('Stream:', stream);
-        const videoElement = document.getElementById('screenVideo');
-        videoElement.srcObject = stream;
-
         const video = document.createElement('video');
         video.srcObject = stream;
         video.onloadedmetadata = () => {
@@ -182,23 +250,40 @@ window.electronAPI.onReceivedSourceId(async (sourceId) => {
                 canvas.height = video.videoHeight;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
+                
                 globalBase64Image = canvas.toDataURL('image/jpeg');
-                //console.log(globalBase64Image); // Now you can send this base64Image to the main process
-                initiateSnippingTool(canvas);
-                //video.srcObject.getTracks().forEach(track => track.stop()); // Stop the stream
+                video.srcObject.getTracks().forEach(track => track.stop());
             }, 100);
         };
-
     } catch (e) {
-        console.error('Error capturing screen:', e);
+        console.error('Error capturing window:', e);
+    }
+}
+
+window.electronAPI.onReceivedSourceId((sourceId) => {
+    if (isCaptureActive) {
+        captureSelectedWindow(sourceId);
     }
 });
+
 
 document.getElementById('start-snipping').addEventListener('click', () => {
     window.electronAPI.startSnipping();
 });
 
+
+window.electronAPI.receive('window-sources-received', (sources) => {
+    const selectElement = document.getElementById('window-select');
+    selectElement.innerHTML = ''; // Clear existing options
+  
+    sources.forEach(source => {
+      const option = document.createElement('option');
+      option.value = source.id;
+      option.innerText = source.name;
+      selectElement.appendChild(option);
+    });
+  });
+  
 
 
 

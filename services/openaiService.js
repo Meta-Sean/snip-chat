@@ -13,6 +13,7 @@ const openai = new OpenAI({
 });
 
 let messageHistory = []; // Global message history
+let activeStream = null;
 
 const openaiService = {
     callOpenAI: async function (prompt, base64Image, targetWindow) {
@@ -34,7 +35,7 @@ const openaiService = {
 
     createContentItems: function(prompt, base64Image) {
         let contentItems = [{"type": "text", "text": prompt}];
-        if (base64Image) {
+        if (base64Image && base64Image !== '') {
             contentItems.push({"type": "image_url", "image_url": { url: base64Image }});
         }
         return contentItems;
@@ -79,26 +80,34 @@ const openaiService = {
 
     textToSpeech: async function (text, targetWindow) {
         try {
+            // Stop the previous stream if it exists
+            if (activeStream) {
+                activeStream.destroy();
+                activeStream = null;
+            }
+
             const response = await openai.audio.speech.create({
                 model: "tts-1",
                 voice: "alloy",
                 input: text,
                 stream: true
             });
-    
+        
             if (response && response.body) {
-                const passThrough = new PassThrough();
-                response.body.pipe(passThrough);
-    
-                passThrough.on('data', (chunk) => {
-                    //console.log("Received audio chunk");
+                activeStream = new PassThrough();
+                response.body.pipe(activeStream);
+
+                activeStream.on('data', (chunk) => {
                     if (targetWindow && !targetWindow.isDestroyed()) {
                         targetWindow.webContents.send('audio-chunk-received', chunk);
                     }
                 });
-    
-                passThrough.on('end', () => {
+
+                activeStream.on('end', () => {
                     console.log('Audio stream ended');
+                    if (targetWindow && !targetWindow.isDestroyed()) {
+                        targetWindow.webContents.send('audio-stream-ended');
+                    }
                 });
             } else {
                 throw new Error('No streamable audio data received');
@@ -106,6 +115,14 @@ const openaiService = {
         } catch (error) {
             console.error('Error in text-to-speech streaming:', error);
             throw error;
+        }
+    },
+
+    stopCurrentStream: function () {
+        if (activeStream) {
+            activeStream.destroy(); // Stop streaming
+            activeStream = null;
+            console.log('TTS stream stopped');
         }
     },
     

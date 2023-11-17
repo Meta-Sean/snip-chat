@@ -7,7 +7,6 @@ contextBridge.exposeInMainWorld('darkMode', {
 })
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  requestSourceId: () => ipcRenderer.send('REQUEST_SOURCE_ID'),
   onReceivedSourceId: (callback) => ipcRenderer.on('RECEIVED_SOURCE_ID', (event, sourceId) => callback(sourceId)),
   send: (channel, data) => ipcRenderer.send(channel, data),
   receive: (channel, callback) => {
@@ -21,7 +20,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     };
     reader.readAsArrayBuffer(audioBlob);
   },
-  requestSourceId: () => ipcRenderer.send('REQUEST_SOURCE_ID'),
+  requestSourceId: (sourceId, mode) => ipcRenderer.send('REQUEST_SOURCE_ID', { sourceId, mode }),
   onReceivedSourceId: (callback) => ipcRenderer.on('RECEIVED_SOURCE_ID', (event, sourceId) => callback(sourceId)),
   startSnipping: () => ipcRenderer.send('start-snipping'),
   sendSnipComplete: (base64Data) => ipcRenderer.send('snip-complete', base64Data),

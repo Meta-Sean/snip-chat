@@ -18,7 +18,10 @@ function createWindow() {
     } 
   });
   mainWindow.loadFile('index.html');
-  
+  mainWindow.webContents.on('did-finish-load', () => {
+    fetchWindowSources(); // Fetch window sources after the main window is ready
+  });  
+
 }
 
 function createSnippingWindow() {
@@ -74,7 +77,7 @@ ipcMain.on('send-prompt', async (event, { prompt, base64Image }) => {
 
 ipcMain.on('clear-history', () => {
   openaiService.clearMessageHistory();
-  // Optionally, send a confirmation back to the renderer process
+  openaiService.stopCurrentStream(); // Make sure to stop the TTS stream
   mainWindow.webContents.send('history-cleared');
 });
 
@@ -86,6 +89,11 @@ ipcMain.on('transcribe-audio', async (event, audioBuffer) => {
   } catch (error) {
     console.error('Error transcribing audio:', error);
   }
+});
+
+ipcMain.on('skip-audio-stream', () => {
+  openaiService.stopCurrentStream();
+  // You can also add additional logic here if needed
 });
 
 ipcMain.on('send-snip', async (event, base64Image) => {
@@ -116,15 +124,38 @@ ipcMain.on('snip-complete', async (event, base64Image) => {
 
 
 
-ipcMain.on('REQUEST_SOURCE_ID', async (event) => {
+ipcMain.on('REQUEST_SOURCE_ID', async (event, { sourceId, mode }) => {
   try {
-    const sources = await desktopCapturer.getSources({ types: ['screen'] });
-    const sourceId = sources[0].id;
-    event.reply('RECEIVED_SOURCE_ID', sourceId);
+    const sources = await desktopCapturer.getSources({ types: ['screen', 'window'] });
+
+    if (mode === 'capture') {
+      // Handle window capture logic
+      const selectedSource = sources.find(source => source.id === sourceId);
+      event.reply('RECEIVED_SOURCE_ID', selectedSource.id);
+    } else if (mode === 'snip') {
+      // Handle screen capture logic for snipping
+      const screenSource = sources.find(source => source.id.includes('screen'));
+      event.reply('RECEIVED_SOURCE_ID', screenSource.id);
+    }
   } catch (error) {
-    console.error('Error getting sources:', error);
+    console.error('Error in REQUEST_SOURCE_ID:', error);
   }
 });
+
+async function fetchWindowSources() {
+  try {
+    const sources = await desktopCapturer.getSources({ types: ['window'] });
+    
+    // Process and send these sources to the renderer process
+    // You might want to send the source names and their respective IDs
+    mainWindow.webContents.send('window-sources-received', sources.map(source => {
+      return { id: source.id, name: source.name };
+    }));
+  } catch (error) {
+    console.error('Error fetching window sources:', error);
+    // Handle the error appropriately
+  }
+}
 
 app.whenReady().then(createWindow);
 

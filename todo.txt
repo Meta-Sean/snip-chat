@@ -15,6 +15,7 @@
 - authentication 
 - Streaming TTS and Streaming Text
 - Window Selection for live and ability to exit the screen share.
+- Audio source detection / choose source
 
 - Rename variables / button and delete unused code. 
 
@@ -27,15 +28,29 @@ Main task for 11/14:
 
 Main tasks for 11/15:
     Easier:
-        Get the response UI formatted properly, input at bottom like chat apps
+        Get the response UI formatted properly, input at bottom like chat apps ✔️X sorted
     Challenge:
-        Get the streaming TTS api working, this will be quite involved as it will require passing chunks
-        of the audio to the app similar to the text
+        Get the streaming TTS api working, this will be quite involved as it will require passing chunks✔️
+        of the audio to the app similar to the text ✔️ still funky
     bonus:
         get a window detection drop down working
         user selects window to stream 
         ability to stop stream
 
+Main tasks for 11/16:
+    Get TTS Pause, Skip, Start Stop working✔️ 
+    Also prepare self for big react refactor with vercel chat-ai template as inspiration  
+
+Main Tasks for 11/17:
+    Lets get window streaming working✔️ 
+    Select window to stream when live:✔️ 
+    send window along with prompt to image api✔️ 
+    ability to stop the stream and go back to normal prompts✔️ 
+    bonus:
+        settings functions for api key, window settings, and voice actor settings
+
+We have to fix API call logic if no image is included we can't use the vision api
+i think its more expensive and their is a small daily limit
 
 Idea:
 Set a live window > calls be seconds > and just return an image call on the interval:
@@ -43,3 +58,4 @@ basically lets you 'listen' to your frame/window instead of watching it
 
 
 BUGS: Seems like the Live function fights with the snip tool, might have to handle if snip ignore live or something
+TTS only seems to work when I use the record feature look into this

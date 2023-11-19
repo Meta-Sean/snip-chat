@@ -76,9 +76,9 @@ ipcMain.on('send-prompt', async (event, { prompt, base64Image }) => {
 
 
 ipcMain.on('clear-history', () => {
+  mainWindow.webContents.send('history-cleared');
   openaiService.clearMessageHistory();
   openaiService.stopCurrentStream(); // Make sure to stop the TTS stream
-  mainWindow.webContents.send('history-cleared');
 });
 
 ipcMain.on('transcribe-audio', async (event, audioBuffer) => {
@@ -117,7 +117,7 @@ ipcMain.on('snip-complete', async (event, base64Image) => {
     // The streaming of the response and its conversion to audio is handled within callOpenAI
   } catch (error) {
     console.error('Error calling OpenAI with snip:', error);
-    mainWindow.webContents.send('api-call-error', error.message);
+    //mainWindow.webContents.send('api-call-error', error.message);
   }
 });
 

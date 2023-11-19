@@ -1,4 +1,8 @@
 let globalBase64Image = ''
+let mediaSource;
+let sourceBuffer;
+let audioElement = document.createElement('audio');
+initializeMediaSource();
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
     const isDarkMode = await window.darkMode.toggle()
@@ -33,7 +37,6 @@ promptInput.addEventListener('keydown', (event) => {
             console.log("Sending Prompt:", prompt);
             window.electronAPI.send('send-prompt', { prompt, base64Image: globalBase64Image });
 
-            // Optionally, clear the input after sending
             promptInput.value = '';
         }
     }
@@ -53,6 +56,7 @@ let currentAudioFilePath = '';
 // // });
 
 window.electronAPI.receive('streamed-response', (partialResponse) => {
+    promptInput.value = '';
     const chatElement = document.getElementById('response-container');
     chatElement.innerHTML += partialResponse; // Append the new text
     // ... scroll to the bottom or handle UI updates ...
@@ -60,18 +64,12 @@ window.electronAPI.receive('streamed-response', (partialResponse) => {
 
 document.getElementById('clear-chat').addEventListener('click', () => {
     window.electronAPI.clearChatHistory();
-    stopAudio(); 
 });
 
 window.electronAPI.onHistoryCleared(() => {
     document.getElementById('response-container').innerHTML = '';
     // Stop and reset the current audio
     stopAudio();
-    // if (currentAudio) {
-    //     currentAudio.pause();
-    //     currentAudio.currentTime = 0; // Reset the audio playback to the start
-    //     currentAudioFilePath = null; // Clear the reference
-    // }
     alert('Chat history cleared!');
 });
 
@@ -84,26 +82,13 @@ document.getElementById('stop-audio').addEventListener('click', () => {
     }
 });
 
-document.getElementById('replay-audio').addEventListener('click', () => {
-    if (currentAudioFilePath) {
-        if (currentAudio) {
-            currentAudio.pause();
-        }
-        currentAudio = new Audio(currentAudioFilePath);
-        currentAudio.play().catch(e => console.error('Error replaying audio:', e));
-    }
-});
-
-let mediaSource;
-let sourceBuffer;
-let audioElement = document.createElement('audio');
-initializeMediaSource();
-
 function initializeMediaSource() {
+    console.log('media source initialized')
     mediaSource = new MediaSource();
     audioElement.src = URL.createObjectURL(mediaSource);
     mediaSource.addEventListener('sourceopen', sourceOpenHandler);
 }
+
 
 function sourceOpenHandler() {
     sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
@@ -167,30 +152,34 @@ document.getElementById('mute-button').addEventListener('click', () => {
     document.getElementById('mute-button').textContent = isMuted ? 'Unmute' : 'Mute';
 });
 
-
+let isRecording = false;
 let mediaRecorder;
 let audioChunks = [];
 
-document.getElementById('start-recording').addEventListener('click', async () => {
-    audioChunks = [];
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream);
-    mediaRecorder.ondataavailable = (event) => {
-        audioChunks.push(event.data);
-    };
-    mediaRecorder.onstop = () => {
-        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-        // Send the audioBlob to the main process for transcription
-        window.electronAPI.sendAudioForTranscription(audioBlob);
-    };
-    mediaRecorder.start();
-    document.getElementById('stop-recording').disabled = false;
+document.getElementById('toggle-recording').addEventListener('click', async () => {
+    if (!isRecording) {
+        // Start recording
+        audioChunks = [];
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = (event) => {
+            audioChunks.push(event.data);
+        };
+        mediaRecorder.onstop = () => {
+            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            window.electronAPI.sendAudioForTranscription(audioBlob);
+        };
+        mediaRecorder.start();
+        document.getElementById('toggle-recording').textContent = 'Stop Recording';
+        isRecording = true;
+    } else {
+        // Stop recording
+        mediaRecorder.stop();
+        document.getElementById('toggle-recording').textContent = 'Start Recording';
+        isRecording = false;
+    }
 });
 
-document.getElementById('stop-recording').addEventListener('click', () => {
-    mediaRecorder.stop();
-    document.getElementById('stop-recording').disabled = true;
-});
 
 window.electronAPI.receive('transcription-complete', (transcribedText) => {
     document.getElementById('prompt-input').value = transcribedText;
@@ -218,8 +207,8 @@ document.getElementById('capture').addEventListener('click', () => {
         window.electronAPI.requestSourceId(selectedWindowId, 'capture');
         captureInterval = setInterval(() => captureSelectedWindow(selectedWindowId), 1000);
     } else {
-        globalBase64Image = '';
         clearInterval(captureInterval);
+        globalBase64Image = '';
     }
 });
 

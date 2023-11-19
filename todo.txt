@@ -59,3 +59,4 @@ basically lets you 'listen' to your frame/window instead of watching it
 
 BUGS: Seems like the Live function fights with the snip tool, might have to handle if snip ignore live or something
 TTS only seems to work when I use the record feature look into this
+Capture is still working after toggled off

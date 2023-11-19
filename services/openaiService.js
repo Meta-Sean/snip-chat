@@ -81,10 +81,10 @@ const openaiService = {
     textToSpeech: async function (text, targetWindow) {
         try {
             // Stop the previous stream if it exists
-            if (activeStream) {
-                activeStream.destroy();
-                activeStream = null;
-            }
+            // if (activeStream) {
+            //     activeStream.destroy();
+            //     activeStream = null;
+            // }
 
             const response = await openai.audio.speech.create({
                 model: "tts-1",

@@ -2,6 +2,7 @@ let globalBase64Image = ''
 let mediaSource;
 let sourceBuffer;
 let audioElement = document.createElement('audio');
+let currentResponseDiv = null;
 initializeMediaSource();
 
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
@@ -11,9 +12,11 @@ document.getElementById('toggle-dark-mode').addEventListener('click', async () =
   
 
 document.getElementById('send-prompt').addEventListener('click', () => {
-    let prompt = document.getElementById('prompt-input').value;
+    const promptInput = document.getElementById('prompt-input');
+    let prompt = promptInput.value;
+    appendUserPrompt(prompt);
+    currentResponseDiv = createResponseDiv();
     promptInput.value = '';
-    //console.log("Sending Base64 Image URL:", globalBase64Image);
     window.electronAPI.send('send-prompt', { prompt, base64Image: globalBase64Image });
     playAudio();
 });
@@ -30,7 +33,10 @@ promptInput.addEventListener('keydown', (event) => {
         event.preventDefault();
 
         // Get the prompt text from the input
-        const prompt = promptInput.value;
+        const promptInput = document.getElementById('prompt-input');
+        let prompt = promptInput.value;
+        appendUserPrompt(prompt);
+        currentResponseDiv = createResponseDiv();
         
         // Check if the prompt is not empty
         if (prompt.trim() !== '') {
@@ -41,6 +47,36 @@ promptInput.addEventListener('keydown', (event) => {
         }
     }
 });
+
+function appendUserPrompt(prompt) {
+    const chatElement = document.getElementById('response-container');
+  
+    // Create and append the user prompt
+    const promptDiv = document.createElement('div');
+    promptDiv.classList.add('user-prompt');
+    promptDiv.textContent = prompt;
+    chatElement.appendChild(promptDiv);
+
+    chatElement.scrollTop = chatElement.scrollHeight;
+}
+
+function createResponseDiv() {
+    const chatElement = document.getElementById('response-container');
+    const responseDiv = document.createElement('div');
+    responseDiv.classList.add('api-response');
+    chatElement.appendChild(responseDiv);
+
+    chatElement.scrollTop = chatElement.scrollHeight;
+    return responseDiv;
+}
+
+function appendToResponseDiv(div, response) {
+    // Append the new chunk of response
+    div.textContent += response;
+
+    const chatElement = document.getElementById('response-container');
+    chatElement.scrollTop = chatElement.scrollHeight;
+}
 
 let currentAudio = null;
 let currentAudioFilePath = '';
@@ -56,10 +92,9 @@ let currentAudioFilePath = '';
 // // });
 
 window.electronAPI.receive('streamed-response', (partialResponse) => {
-    promptInput.value = '';
-    const chatElement = document.getElementById('response-container');
-    chatElement.innerHTML += partialResponse; // Append the new text
-    // ... scroll to the bottom or handle UI updates ...
+    if (currentResponseDiv) {
+        appendToResponseDiv(currentResponseDiv, partialResponse);
+    }
 });
 
 document.getElementById('clear-chat').addEventListener('click', () => {
@@ -71,15 +106,6 @@ window.electronAPI.onHistoryCleared(() => {
     // Stop and reset the current audio
     stopAudio();
     alert('Chat history cleared!');
-});
-
-
-document.getElementById('stop-audio').addEventListener('click', () => {
-    stopAudio();
-    if (currentAudio) {
-        currentAudio.pause();
-        currentAudio.currentTime = 0; // Reset audio to start
-    }
 });
 
 function initializeMediaSource() {
@@ -190,7 +216,8 @@ let isCaptureActive = false;
 let captureMode = '';
 let captureInterval;
 
-document.getElementById('window-select').addEventListener('change', () => {
+document.getElementById('window-select').addEventListener('focus', () => {
+    window.electronAPI.send('refresh-window-sources');
     if (isCaptureActive) {
         const selectedWindowId = document.getElementById('window-select').value;
         clearInterval(captureInterval); // Stop the current capture interval
@@ -198,6 +225,18 @@ document.getElementById('window-select').addEventListener('change', () => {
         captureInterval = setInterval(() => captureSelectedWindow(selectedWindowId), 1000); // Restart the capture interval
     }
 });
+
+window.electronAPI.receive('window-sources-received', (sources) => {
+    const selectElement = document.getElementById('window-select');
+    selectElement.innerHTML = ''; // Clear existing options
+  
+    sources.forEach(source => {
+      const option = document.createElement('option');
+      option.value = source.id;
+      option.innerText = source.name;
+      selectElement.appendChild(option);
+    });
+  });
 
 document.getElementById('capture').addEventListener('click', () => {
     isCaptureActive = !isCaptureActive;
@@ -260,21 +299,31 @@ document.getElementById('start-snipping').addEventListener('click', () => {
     window.electronAPI.startSnipping();
 });
 
+window.electronAPI.receive('snip-initiated', (promptText) => {
+    promptInput.value = '';
+    appendUserPrompt(promptText); // Display the actual prompt used for the snip
+    currentResponseDiv = createResponseDiv();
+  });
 
-window.electronAPI.receive('window-sources-received', (sources) => {
-    const selectElement = document.getElementById('window-select');
-    selectElement.innerHTML = ''; // Clear existing options
-  
-    sources.forEach(source => {
-      const option = document.createElement('option');
-      option.value = source.id;
-      option.innerText = source.name;
-      selectElement.appendChild(option);
-    });
+document.getElementById('settings-button').addEventListener('click', () => {
+    document.getElementById('settings-modal').style.display = 'block';
   });
   
-
-
-
-
-
+document.querySelector('.close-button').addEventListener('click', () => {
+    document.getElementById('settings-modal').style.display = 'none';
+  });
+  
+  // When the user clicks anywhere outside of the modal, close it
+window.onclick = function(event) {
+    let modal = document.getElementById('settings-modal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  }
+  
+  // Save settings button functionality
+document.getElementById('save-settings').addEventListener('click', () => {
+    // You can add logic here to save the API key and selected window
+    // For now, we'll just close the modal
+    document.getElementById('settings-modal').style.display = 'none';
+  });

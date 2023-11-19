@@ -6,11 +6,8 @@
 </head>
 <body>
   <div class="header">
-    <button id="toggle-dark-mode" class="dark-mode-toggle">🌙</button>
     <button id="toggle-recording">Start Recording</button>
-    <select id="window-select"></select>
     <button id="capture">Capture</button>
-    <button id="stop-audio">Stop Audio</button>
     <button id="mute-button">Mute</button>
     <button id="skip-button">Skip</button>
     <button id="start-snipping">Snip</button>
@@ -25,9 +22,28 @@
     </div>
   </div>
 
-  <video id="screenVideo" autoplay style="display:none;"></video>
+  <!-- Settings Button -->
+<button id="settings-button" class="settings-button">
+  ⚙️
+</button>
 
-  <!-- Link to the renderer.js script -->
+<!-- Settings Modal -->
+<div id="settings-modal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2>Settings</h2>
+    
+    <label for="api-key-input">API Key:</label>
+    <input type="text" id="api-key-input" placeholder="Enter your API key here" />
+    <button id="toggle-dark-mode" class="dark-mode-toggle">🌙</button>
+    <label for="window-select-modal">Select Window:</label>
+    <select id="window-select"></select>
+    
+    <button id="save-settings">Save</button>
+  </div>
+</div>
+
+
   <script src="renderer.js"></script>
 </body>
 </html>

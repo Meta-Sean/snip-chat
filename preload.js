@@ -25,7 +25,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   startSnipping: () => ipcRenderer.send('start-snipping'),
   sendSnipComplete: (base64Data) => ipcRenderer.send('snip-complete', base64Data),
   clearChatHistory: () => ipcRenderer.send('clear-history'),
-  onHistoryCleared: (callback) => ipcRenderer.on('history-cleared', callback)
+  onHistoryCleared: (callback) => ipcRenderer.on('history-cleared', callback),
+  closeModal: () => ipcRenderer.send('close-modal'),
+  saveSettings: (apiKey, selectedWindow) => ipcRenderer.send('save-settings', { apiKey, selectedWindow }),
 
 
 });

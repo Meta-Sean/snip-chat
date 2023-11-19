@@ -3,6 +3,9 @@
   --text-color: #fff;
   --button-background: #333;
   --button-border: #444;
+  --button-hover: #4CAF50; /* A new variable for button hover state */
+  --input-background: #2c2c2c; /* Slightly lighter than the background for contrast */
+  --border-radius: 4px; /* Consistent border-radius */
 }
 
 body {
@@ -11,75 +14,203 @@ body {
   height: 100vh;
   background: var(--background-color);
   color: var(--text-color);
-  font-family: Arial, sans-serif;
+  font-family: 'Open Sans', sans-serif; /* Modern font */
+  margin: 0; /* Reset default margin */
 }
 
 .header {
   display: flex;
-  padding: 10px;
+  padding: 1rem;
   background: var(--button-background);
   gap: 10px;
+  align-items: center; /* Align items vertically */
 }
 
+/* Dark mode toggle button with improved accessibility */
 .dark-mode-toggle {
   background: none;
-  border: none;
+  border: 1px solid transparent; /* Add a transparent border for consistent sizing */
   color: var(--text-color);
   font-size: 24px;
   cursor: pointer;
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
 }
 
+.dark-mode-toggle:hover, .dark-mode-toggle:focus {
+  background: var(--button-border); /* Visual feedback on hover/focus */
+}
+
+/* Chat container with better padding and scroll */
 .chat-container {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px;
+  padding: 1rem;
 }
 
 #response-container {
   flex-grow: 1;
   overflow-y: auto;
   border: 1px solid var(--button-border);
-  padding: 10px;
-  margin-bottom: 10px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--border-radius); /* Rounded corners for the chat container */
 }
 
+/* Input area with increased accessibility and better spacing */
 .input-area {
   display: flex;
   gap: 10px;
+  padding: 0.5rem 0; /* Padding only on top and bottom */
 }
 
 .input-area input {
   flex-grow: 1;
-  padding: 10px;
+  padding: 0.5rem;
   border: 1px solid var(--button-border);
-  background: var(--button-background);
+  background: var(--input-background);
   color: var(--text-color);
+  border-radius: var(--border-radius);
 }
 
+/* Button styling with modern look and feedback */
 .input-area button, .header button {
   background: var(--button-background);
   border: 1px solid var(--button-border);
-  padding: 10px 15px;
+  padding: 0.5rem 1rem;
   color: var(--text-color);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.3s ease; /* Transition for smooth color change */
+}
+
+.input-area button:hover, .header button:hover {
+  background: var(--button-hover); /* Change background on hover */
+}
+
+/* Message styling for clear visual separation */
+.message {
+  margin: 0.5rem 0; /* Increased top and bottom margin */
+  padding: 0.5rem;
+  border-radius: var(--border-radius);
+  max-width: 80%;
+  word-wrap: break-word; /* Ensure long words do not overflow */
+}
+
+.user-prompt {
+  background-color: #2a2a2a; /* A slightly lighter shade for contrast */
+  color: #d1d1d1; /* Lighter text color for readability */
+  padding: 12px;
+  border-radius: 16px;
+  margin: 8px 0;
+  max-width: 80%;
+  word-break: break-word;
+  align-self: flex-start; /* Align to start for the user's messages */
+}
+
+/* Styles for API responses */
+.api-response {
+  background-color: #333; /* A distinct shade from the user prompt */
+  color: #d1d1d1; /* Same text color for consistency */
+  padding: 12px;
+  border-radius: 16px;
+  margin: 8px 0;
+  max-width: 80%;
+  word-break: break-word;
+  align-self: flex-end; /* Align to end for the API's messages */
+}
+
+.settings-button {
+  position: absolute; /* Position it at the top-right corner */
+  top: 10px;
+  right: 10px;
+  z-index: 100; /* Ensure it's above other elements */
+}
+
+/* Modal Styles */
+.modal {
+  display: none; /* Hidden by default */
+  position: fixed;
+  z-index: 10; /* Sit on top of everything */
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto; /* Enable scroll if needed */
+  background-color: rgba(0, 0, 0, 0.4); /* Dimmed background */
+}
+
+.modal-content {
+  position: relative; /* Needed for absolute positioning of children */
+  background-color: #fefefe;
+  margin: 10% auto; /* Center the modal */
+  padding: 20px;
+  border: 1px solid #888;
+  width: 30%; /* Adjust as necessary */
+  border-radius: 5px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Soft shadow for depth */
+}
+
+.close-button {
+  position: absolute; /* Absolute position to place it at the top-right corner */
+  top: 10px;
+  right: 10px;
+  color: #aaa;
+  font-size: 28px;
+  font-weight: bold;
   cursor: pointer;
 }
 
-.message {
-  margin: 5px;
+.close-button:hover,
+.close-button:focus {
+  color: black;
+  text-decoration: none;
+}
+
+/* Input fields and labels within the modal */
+.modal label {
+  display: block;
+  margin-top: 1em;
+}
+
+.modal input[type="text"] {
+  width: calc(100% - 20px); /* Full width minus padding */
   padding: 10px;
-  border-radius: 8px;
-  max-width: 80%;
+  margin-bottom: 1em;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box; /* Include padding and border in the element's width and height */
 }
 
-.user {
-  background-color: #daf8cb;
-  align-self: flex-start;
+.modal #window-select {
+  width: 100%; /* Full width of the modal content */
+  padding: 10px;
+  margin: 10px 0; /* Space above and below the select box */
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: white;
+  color: #333;
+  box-sizing: border-box; /* Padding and border are included in width */
 }
 
-.assistant {
-  background-color: #f0f0f0;
-  align-self: flex-end;
+.modal .window-select:focus {
+  border-color: #4CAF50;
+  outline: none;
 }
 
+/* Save button in modal */
+.modal #save-settings {
+  width: 100%;
+  padding: 10px;
+  border: none;
+  border-radius: 4px;
+  background-color: #4CAF50;
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
 
+.modal #save-settings:hover {
+  background-color: #369b47;
+}

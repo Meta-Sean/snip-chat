@@ -63,7 +63,7 @@ ipcMain.on('send-prompt', async (event, { prompt, base64Image }) => {
 
     // Call the OpenAI service with a callback for streamed text
     await openaiService.callOpenAI(prompt, base64Image, mainWindow);
-
+    currentPromptText = ''
     // Once the full text response is received, handle text-to-speech
     // if (fullTextResponse) {
     //   const audioFilePath = await openaiService.textToSpeech(fullTextResponse);
@@ -111,18 +111,14 @@ ipcMain.on('snip-complete', async (event, base64Image) => {
     snippingWindow.close();
     snippingWindow = null;
   }
-
+  // Send the current prompt along with the notification
+  mainWindow.webContents.send('snip-initiated', currentPromptText);
   try {
     await openaiService.callOpenAI(currentPromptText, base64Image, mainWindow);
-    // The streaming of the response and its conversion to audio is handled within callOpenAI
   } catch (error) {
     console.error('Error calling OpenAI with snip:', error);
-    //mainWindow.webContents.send('api-call-error', error.message);
   }
 });
-
-
-
 
 ipcMain.on('REQUEST_SOURCE_ID', async (event, { sourceId, mode }) => {
   try {
@@ -144,8 +140,7 @@ ipcMain.on('REQUEST_SOURCE_ID', async (event, { sourceId, mode }) => {
 
 async function fetchWindowSources() {
   try {
-    const sources = await desktopCapturer.getSources({ types: ['window'] });
-    
+    const sources = await desktopCapturer.getSources({ types: ['window'] });   
     // Process and send these sources to the renderer process
     // You might want to send the source names and their respective IDs
     mainWindow.webContents.send('window-sources-received', sources.map(source => {
@@ -156,6 +151,17 @@ async function fetchWindowSources() {
     // Handle the error appropriately
   }
 }
+
+ipcMain.on('refresh-window-sources', async (event) => {
+  try {
+    const sources = await desktopCapturer.getSources({ types: ['window'] });
+    event.sender.send('window-sources-received', sources.map(source => {
+      return { id: source.id, name: source.name };
+    }));
+  } catch (error) {
+    console.error('Error refreshing window sources:', error);
+  }
+});
 
 app.whenReady().then(createWindow);
 
@@ -170,9 +176,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-
-
-
-
-

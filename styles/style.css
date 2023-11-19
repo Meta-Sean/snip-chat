@@ -19,11 +19,14 @@ body {
 }
 
 .header {
-  display: flex;
   padding: 1rem;
   background: var(--button-background);
   gap: 10px;
-  align-items: center; /* Align items vertically */
+  align-items: center;
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 100;
 }
 
 /* Dark mode toggle button with improved accessibility */
@@ -43,35 +46,83 @@ body {
 
 /* Chat container with better padding and scroll */
 .chat-container {
-  flex-grow: 1;
   display: flex;
   flex-direction: column;
   padding: 1rem;
+  overflow: hidden; /* Prevents any spillover from the container */
+  height: calc(100vh - 120px); /* Adjust this value based on the actual combined height of the header and input area */
 }
 
 #response-container {
-  flex-grow: 1;
   overflow-y: auto;
-  border: 1px solid var(--button-border);
-  padding: 1rem;
   margin-bottom: 1rem;
-  border-radius: var(--border-radius); /* Rounded corners for the chat container */
+  padding: 1rem;
+  border: 1px solid var(--button-border);
+  border-radius: var(--border-radius);
+  min-height: 300px; /* Or any other value that looks good to you */
+  flex-grow: 1;
 }
 
 /* Input area with increased accessibility and better spacing */
 .input-area {
   display: flex;
   gap: 10px;
-  padding: 0.5rem 0; /* Padding only on top and bottom */
+  padding: 0.5rem 0;
+  background: var(--background-color);
 }
 
-.input-area input {
+
+.input-area textarea {
   flex-grow: 1;
   padding: 0.5rem;
   border: 1px solid var(--button-border);
   background: var(--input-background);
   color: var(--text-color);
   border-radius: var(--border-radius);
+  resize: vertical; /* Allow vertical resizing, you could use 'none' to disable resizing */
+  overflow-y: auto; /* Allow vertical scrollbar if the content overflows */
+  min-height: 50px; /* Minimum height before content is entered or when empty */
+  max-height: 200px; /* Maximum height before scrolling starts */
+  box-sizing: border-box; /* Include padding in the height calculation */
+}
+.toggle-recording {
+  background: var(--button-background);
+  border: 1px solid var(--button-border);
+  padding: 0.5rem 1rem;
+  color: var(--text-color);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.3s ease; /* Transition for smooth color change */
+}
+
+.toggle-recording.active {
+  background-color: #FF4136; /* Red background for active state */
+  color: white; /* White text for contrast */
+}
+
+/* Hover state for the recording button when it's active */
+.toggle-recording.active:hover {
+  background-color: #E82C0C; /* A slightly darker red for the hover state */
+}
+
+.capture-toggle {
+  background: var(--button-background);
+  border: 1px solid var(--button-border);
+  padding: 0.5rem 1rem;
+  color: var(--text-color);
+  cursor: pointer;
+  border-radius: var(--border-radius);
+  transition: background-color 0.3s ease; /* Transition for smooth color change */
+}
+
+.capture-toggle.active {
+  background-color: #FF4136; /* Red background for active state */
+  color: white; /* White text for contrast */
+}
+
+/* Hover state for the capture button when it's active */
+.capture-toggle.active:hover {
+  background-color: #E82C0C; /* A slightly darker red for the hover state */
 }
 
 /* Button styling with modern look and feedback */

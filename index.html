@@ -6,10 +6,10 @@
 </head>
 <body>
   <div class="header">
-    <button id="toggle-recording">Start Recording</button>
-    <button id="capture">Capture</button>
+    <button id="toggle-recording" class="toggle-recording">Start Recording</button>
+    <button id="capture" class="capture-toggle">Capture: Off</button>
     <button id="mute-button">Mute</button>
-    <button id="skip-button">Skip</button>
+    <button id="skip-button">Stop</button>
     <button id="start-snipping">Snip</button>
     <button id="clear-chat">Clear Chat</button>
   </div>
@@ -17,7 +17,7 @@
   <div class="chat-container">
     <div id="response-container"></div>
     <div class="input-area">
-      <input type="text" id="prompt-input" placeholder="Enter your prompt here...">
+      <textarea id="prompt-input" placeholder="Enter your prompt here..."></textarea>
       <button id="send-prompt">Send</button>
     </div>
   </div>

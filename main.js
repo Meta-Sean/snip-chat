@@ -15,8 +15,9 @@ function createWindow() {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-    } 
+    }
   });
+  //mainWindow.setMenu(null);
   mainWindow.loadFile('index.html');
   mainWindow.webContents.on('did-finish-load', () => {
     fetchWindowSources(); // Fetch window sources after the main window is ready

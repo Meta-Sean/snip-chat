@@ -1,3 +1,4 @@
+const marked = require('marked');
 let globalBase64Image = ''
 let mediaSource;
 let sourceBuffer;
@@ -117,23 +118,31 @@ function initializeMediaSource() {
 
 
 function sourceOpenHandler() {
+    console.log('running sourceopenhandler')
     sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg');
-    sourceBuffer.addEventListener('updateend', updateEndHandler);
+    sourceBuffer.addEventListener('updateend', () => {
+        if (audioChunksQueue.length > 0 && !sourceBuffer.updating) {
+            const nextChunk = audioChunksQueue.shift();
+            sourceBuffer.appendBuffer(nextChunk);
+        }
+    });
 }
 
-function updateEndHandler() {
-    // This can be used for actions after updates are complete
-}
+let audioChunksQueue = [];
 
 window.electronAPI.receive('audio-chunk-received', (chunk) => {
     if (sourceBuffer && !sourceBuffer.updating) {
         sourceBuffer.appendBuffer(chunk);
+        playAudio();
+    } else {
+        audioChunksQueue.push(chunk);
     }
 });
 
 function playAudio() {
+    // Play the audio if it's not already playing
     if (audioElement.paused) {
-        audioElement.play();
+        audioElement.play().catch(e => console.error('Error playing audio:', e));
     }
 }
 
@@ -183,6 +192,7 @@ let mediaRecorder;
 let audioChunks = [];
 
 document.getElementById('toggle-recording').addEventListener('click', async () => {
+    const recordingButton = document.getElementById('toggle-recording');
     if (!isRecording) {
         // Start recording
         audioChunks = [];
@@ -196,12 +206,14 @@ document.getElementById('toggle-recording').addEventListener('click', async () =
             window.electronAPI.sendAudioForTranscription(audioBlob);
         };
         mediaRecorder.start();
-        document.getElementById('toggle-recording').textContent = 'Stop Recording';
+        recordingButton.textContent = 'Recording: On';
+        recordingButton.classList.add('active');
         isRecording = true;
     } else {
         // Stop recording
         mediaRecorder.stop();
-        document.getElementById('toggle-recording').textContent = 'Start Recording';
+        recordingButton.textContent = 'Recording: Off';
+        recordingButton.classList.remove('active');
         isRecording = false;
     }
 });
@@ -240,12 +252,17 @@ window.electronAPI.receive('window-sources-received', (sources) => {
 
 document.getElementById('capture').addEventListener('click', () => {
     isCaptureActive = !isCaptureActive;
+    const captureButton = document.getElementById('capture');
     console.log('Capture state:', isCaptureActive)
     const selectedWindowId = document.getElementById('window-select').value;
     if (isCaptureActive) {
+        captureButton.textContent = 'Capture: Active';
+        captureButton.classList.add('active');        
         window.electronAPI.requestSourceId(selectedWindowId, 'capture');
         captureInterval = setInterval(() => captureSelectedWindow(selectedWindowId), 1000);
     } else {
+        captureButton.textContent = 'Capture: Off';
+        captureButton.classList.remove('active');
         clearInterval(captureInterval);
         globalBase64Image = '';
     }

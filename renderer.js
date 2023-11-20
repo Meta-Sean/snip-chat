@@ -1,4 +1,3 @@
-const marked = require('marked');
 let globalBase64Image = ''
 let mediaSource;
 let sourceBuffer;

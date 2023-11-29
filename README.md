@@ -22,7 +22,7 @@ An intuitive application that brings natural language interaction to your deskto
 
 Below are the images of SnipChat's primary interface. These screenshots will give you a basic understanding of the application's layout and functionality.
 
-![SnipChat Main Interface](https://github.com/Meta-Sean/snip-chat/raw/main/snipchat.png)
+![SnipChat Main Interface](https://github.com/Meta-Sean/snip-chat/blob/master/snipchat.png)
 
 *The main chat interface of SnipChat where users can type or dictate their queries and view the conversation history.*
 

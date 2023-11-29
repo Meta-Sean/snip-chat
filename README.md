@@ -6,7 +6,7 @@ SnipChat is an Electron app that brings a futuristic twist to computer interacti
 
 An intuitive application that brings natural language interaction to your desktop, integrating OpenAI's powerful language models for an enhanced conversational experience.
 
-[Download SnipChat Setup 1.0.0](https://github.com/Meta-Sean/snip-chat/blob/master/SnipChat%20Setup%201.0.0.exe)
+[Download SnipChat Setup 1.0.0](https://github.com/Meta-Sean/snip-chat/raw/master/SnipChat%20Setup%201.0.0.exe)
 
 ## Features
 

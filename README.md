@@ -1,6 +1,6 @@
 # SnipChat
 
-SnipChat is an Electron app that brings a futuristic twist to computer interaction by leveraging OpenAI's powerful APIs for text-to-speech, transcription, language understanding, and image generation.
+SnipChat is an Electron app that brings a twist to computer interaction by leveraging OpenAI's powerful APIs for text-to-speech, transcription, language understanding, and image generation.
 
 # SnipChat
 
